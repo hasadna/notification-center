@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:pkw="http://hasadna.org.il/rss/1.0/dtd">
+
+<channel>
+  <title>Updates from Opening the Budget</title>
+  <link>http://the.open-budget.org.il</link>
+  <description>Opening the Israeli Government Budget, one Shekel at a time</description>
+  <item>
+    <title>New transfer of 5 Million Shekels</title>
+    <link>http://the.open-budget.org.il/00203040</link>
+    <description>5 Millions Shekels were transferred to the cow and sheep department</description>
+    <pkw:tags>transfer,00203040,agriculture</pkw:tags>
+    <pkw:latlon>32.1,34.8</pkw:latlon>
+    <pubDate>Tue, 18 Mar 2014 15:10:35 +0000</pubDate>
+  </item>
+</channel>
+
+</rss>

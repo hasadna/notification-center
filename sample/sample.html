@@ -1,0 +1,28 @@
+<head>
+<script src="jquery.js"></script>
+<script src="http://hasadna-notifications.appspot.com/scripts/hn.js"></script>
+<script>
+$( function() { 
+  $("#subscribe").submit( function() { 
+    window.hn.subscribe( 
+             $("#url").val(), 
+             $("#tags").val(),
+             $("#period").val(),
+             function() {
+                 alert("success");
+             },
+             function( url ) {
+                 window.open( url );
+             } );
+
+  } );
+});
+</script>
+</head>
+<body>
+<form id="subscribe" action="#">
+  <p><label>URL</label><input id="url" type="text" value="http://localhost:8000/sample.rss"/></p>
+  <p><label>Tags:<label><input id="tags" type="text" value="agriculture"/></p>
+  <p><label>Period (seconds):<label><input id="period" type="text" value="60"/></p>
+  <p><input type="submit" value="Subscribe"/></p>
+</form>

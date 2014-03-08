@@ -1,0 +1,28 @@
+application: hasadna-notifications
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
+
+- url: /api/.*
+  script: main.app
+
+- url: /tasks/.*
+  script: main.app
+
+- url: /scripts/(.+)
+  static_files: scripts/\1
+  upload: scripts/
+
+- url: /sample/rss
+  static_files: sample/sample.rss
+  upload: sample/sample.rss
+
+libraries:
+- name: webapp2
+  version: "2.5.2"

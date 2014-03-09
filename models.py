@@ -16,6 +16,7 @@ class Subscription(ndb.Model):
     # Filters
     tags = ndb.StringProperty(repeated=True)
     latlon = ndb.GeoPtProperty()
+    radius = ndb.IntegerProperty()
 
     # Polling Settings
     period = ndb.IntegerProperty()

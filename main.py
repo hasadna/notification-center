@@ -13,7 +13,7 @@ from google.appengine.api import mail
 
 from feedparser import feedparser
 
-class SubscribeHandler(webapp2.RequestHandler):
+class APIHandler(webapp2.RequestHandler):
 
     def _set_response_headers(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -22,13 +22,61 @@ class SubscribeHandler(webapp2.RequestHandler):
         self.response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, X-Requested-With, Cookie'
         self.response.headers['Access-Control-Allow-Credentials'] = 'true'
 
+    def options(self):
+        self._set_response_headers()
+        self.response.write('{}')
+
+    def get(self):
+        params = [ self.request.get(p) for p in self._params() ]
+        callback = self.request.get('callback')
+        ret = self._handle(*params)
+        if callback is not None and callback != '':
+            self.response.write('%s(%s);' % (callback, ret))
+        else:
+            self.response.write(ret)
+        
+    def post(self):
+        body = json.loads( self.request.body )
+        params = [ body.get(p) for p in self._params() ]
+        ret = self._handle(*params)
+        self.response.write(ret)
+
+class UnSubscribeHandler(APIHandler):
+
+    def _params(self):
+        return ['subscription_id']
+
+    def _handle(self,subscription_id):
+        self._set_response_headers()
+
+        user = users.get_current_user()
+
+        if not user:
+            response = { 'success': False, 'login': users.create_login_url(None) }
+        else:
+            success = False
+            key = ndb.Key(urlsafe=subscription_id)
+            if key.kind() == "Subscription":
+                subscription = key.get()
+                if subscription.user == user:
+                    key.delete()
+                    success = True
+            response = { 'success': success }
+        return json.dumps(response)
+            
+
+class SubscribeHandler(APIHandler):
+
+    def _params(self):
+        return ['url','tags','latlon','radius','period']
+
     def _handle(self,url,tags,latlon,radius,period):
         self._set_response_headers()
 
         user = users.get_current_user()
 
         if not user:
-            response = { 'success': False, 'login': users.create_login_url(self.request.uri) }
+            response = { 'success': False, 'login': users.create_login_url(None) }
         else:
             try:
                 period = int(period)
@@ -38,6 +86,14 @@ class SubscribeHandler(webapp2.RequestHandler):
                 radius = int(radius)
             except:
                 radius = None
+
+            if tags is not None:
+                tags = tags.split(',')
+            else:
+                tags = []
+
+            tags = [x for x in tags if len(x) > 0]
+
             src = NotificationSource.query( NotificationSource.url == url ).fetch(1)
             if len(src) == 1:
                 src = src[0]
@@ -49,10 +105,6 @@ class SubscribeHandler(webapp2.RequestHandler):
                            Subscription.source == src.key, 
                            Subscription.latlon == latlon, 
                            Subscription.radius == radius ]
-
-            if tags is None:
-                tags = []
-            tags = [x for x in tags if len(x) > 0]
             if len(tags) > 0:
                 conditions.append( ndb.AND(*[Subscription.tags == tag for tag in tags]) )
 
@@ -70,32 +122,6 @@ class SubscribeHandler(webapp2.RequestHandler):
             
         return json.dumps(response)
 
-    def options(self):
-        self._set_response_headers()
-        self.response.write('{}')
-
-    def get(self):
-        url = self.request.get('url')
-        tags = self.request.get('tags')
-        latlon = self.request.get('latlon')
-        radius = self.request.get('radius')
-        period = self.request.get('period')
-        callback = self.request.get('callback')
-        ret = self._handle(url,tags,latlon,radius,period)
-        if callback is not None and callback != '':
-            self.response.write('%s(%s);' % (callback, ret))
-        else:
-            self.response.write(ret)
-        
-    def post(self):
-        body = json.loads( self.request.body )
-        url = body['url']
-        tags = body.get('tags').split(',')
-        latlon = body.get('latlon')
-        radius = body.get('radius')
-        period = body.get('period')
-        ret = self._handle(url,tags,latlon,radius,period)
-        self.response.write(ret)
 
 class PollRssHandler(webapp2.RequestHandler):
 
@@ -129,7 +155,7 @@ class PollRssHandler(webapp2.RequestHandler):
                        to=subscription.user.email(),
                        subject="Updates from: %s" % feed.feed.title,
                        body= subtitle + "\n---\n".join("\n".join([x.title,x.description,x.link]) for x in to_send),
-                       html="<h2>%s</h2>" % subtitle + "<hr/>".join("<br/>".join([x.title,x.description,x.link]) for x in to_send)
+                       html="<h2>%s</h2>" % subtitle + "<hr/>".join("<br/>".join(["<b>"+x.title+"</b>",x.description,x.link]) for x in to_send)
                        )
 
     def get(self):
@@ -137,7 +163,11 @@ class PollRssHandler(webapp2.RequestHandler):
             logging.log(logging.INFO, "src=%s" % src.url)
             url = src.url
 
-            data = urlfetch.fetch(url)
+            try:
+                data = urlfetch.fetch(url)
+            except:
+                logging.log(logging.WARN, "Failed to fetch url %s" % url)
+                continue
             feed = feedparser.parse(data.content)
 
             if feed.feed.title != src.title:
@@ -177,5 +207,6 @@ class PollRssHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/api/subscribe', SubscribeHandler),
+    ('/api/unsubscribe', UnSubscribeHandler),
     ('/tasks/pollrss', PollRssHandler)
 ], debug=True)

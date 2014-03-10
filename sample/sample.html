@@ -2,27 +2,54 @@
 <script src="jquery.js"></script>
 <script src="http://hasadna-notifications.appspot.com/scripts/hn.js"></script>
 <script>
-$( function() { 
-  $("#subscribe").submit( function() { 
-    window.hn.subscribe( 
-             $("#url").val(), 
+login = function(url) {
+  $("#message").html("Login needed - please click <a href='"+url+"' target='_blank'>Here</a>")
+}
+$( function() {
+  $("#subscribe").submit( function() {
+    window.hn.subscribe(
+             $("#url").val(),
              $("#tags").val(),
+             $("#latlon").val(),
+             $("#radius").val(),
              $("#period").val(),
-             function() {
-                 alert("success");
+             function( key ) {
+                 $("#message").html("Subscribed! <a href='#' class='unsubscribe' data-key='"+key+"'>Unsubscribe</a>");
              },
              function( url ) {
-                 window.open( url );
+                 login(url);
              } );
 
+  } );
+  $(document).on("click", ".unsubscribe", function() {
+    key = $(this).attr("data-key");
+    window.hn.unsubscribe( key,
+                           function() {
+                               $("#message").html("Unsubscribed!");
+                           },
+                           function( url ) {
+                             login(url);
+                           } );
+    return false;
   } );
 });
 </script>
 </head>
+
 <body>
+
+
+<div style="border:solid 1px black;width:650;padding:10">
+<b>Subscribe to any feed (by default it will subscribe you to Walla! news updates)</b>
 <form id="subscribe" action="#">
-  <p><label>URL</label><input id="url" type="text" value="http://localhost:8000/sample.rss"/></p>
-  <p><label>Tags:<label><input id="tags" type="text" value="agriculture"/></p>
-  <p><label>Period (seconds):<label><input id="period" type="text" value="60"/></p>
+  <p><label style="display:inline-block;width:200">URL:</label><input style="width:400" id="url" type="text" value="http://rss.walla.co.il/?w=/1/0/1/@rss"/></p>
+  <p><label style="display:inline-block;width:200">Tags (comma delimited):</label><input style="width:400" id="tags" type="text" value=""/></p>
+  <p><label style="display:inline-block;width:200">Period (seconds):</label><input id="period" type="text" value="3600"/></p>
+  <p><label style="display:inline-block;width:200">Lat,Lon (comma delimited):</label><input style="width:400" id="tags" type="text" value=""/></p>
+  <p><label style="display:inline-block;width:200">Radius:</label><input style="width:400" id="tags" type="text" value=""/></p>
   <p><input type="submit" value="Subscribe"/></p>
 </form>
+</div>
+
+<div id="message"></div>
+</body>

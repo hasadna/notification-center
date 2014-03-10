@@ -22,6 +22,12 @@ class APIHandler(webapp2.RequestHandler):
         self.response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since, X-Requested-With, Cookie'
         self.response.headers['Access-Control-Allow-Credentials'] = 'true'
 
+    def _loginURL(self):
+        if self.request.method == "GET":
+          return users.create_login_url(self.request.uri)
+        else:
+          return users.create_login_url("/static/loggedin.html")
+
     def options(self):
         self._set_response_headers()
         self.response.write('{}')
@@ -34,7 +40,7 @@ class APIHandler(webapp2.RequestHandler):
             self.response.write('%s(%s);' % (callback, ret))
         else:
             self.response.write(ret)
-        
+
     def post(self):
         body = json.loads( self.request.body )
         params = [ body.get(p) for p in self._params() ]
@@ -52,7 +58,7 @@ class UnSubscribeHandler(APIHandler):
         user = users.get_current_user()
 
         if not user:
-            response = { 'success': False, 'login': users.create_login_url(None) }
+            response = { 'success': False, 'login': self._loginURL() }
         else:
             success = False
             key = ndb.Key(urlsafe=subscription_id)
@@ -63,7 +69,7 @@ class UnSubscribeHandler(APIHandler):
                     success = True
             response = { 'success': success }
         return json.dumps(response)
-            
+
 
 class SubscribeHandler(APIHandler):
 
@@ -76,7 +82,7 @@ class SubscribeHandler(APIHandler):
         user = users.get_current_user()
 
         if not user:
-            response = { 'success': False, 'login': users.create_login_url(None) }
+            response = { 'success': False, 'login': self._loginURL() }
         else:
             try:
                 period = int(period)
@@ -101,9 +107,9 @@ class SubscribeHandler(APIHandler):
                 src = NotificationSource( url = url )
                 ndb.put_multi([src])
 
-            conditions = [ Subscription.user == user, 
-                           Subscription.source == src.key, 
-                           Subscription.latlon == latlon, 
+            conditions = [ Subscription.user == user,
+                           Subscription.source == src.key,
+                           Subscription.latlon == latlon,
                            Subscription.radius == radius ]
             if len(tags) > 0:
                 conditions.append( ndb.AND(*[Subscription.tags == tag for tag in tags]) )
@@ -113,13 +119,13 @@ class SubscribeHandler(APIHandler):
                 subscription = subscription[0]
                 subscription.period = period
             else:
-                subscription = Subscription( user = user, source = src.key, 
-                                             tags = tags, latlon = latlon, radius = radius, period = period, 
+                subscription = Subscription( user = user, source = src.key,
+                                             tags = tags, latlon = latlon, radius = radius, period = period,
                                              next_poll=datetime.datetime.now(),
-                                             last_read=datetime.datetime.now() )
+                                             last_read=datetime.datetime.now() - datetime.timedelta(hours=3) )
             ndb.put_multi([subscription])
             response = { 'success': True, 'id': subscription.key.urlsafe() }
-            
+
         return json.dumps(response)
 
 
@@ -134,7 +140,7 @@ class PollRssHandler(webapp2.RequestHandler):
                 if len(entry.pkw_tags & set(subscription.tags)) == 0:
                     continue
             to_send.append( entry )
-        
+
         if len(to_send) == 0:
             return
 
@@ -197,13 +203,13 @@ class PollRssHandler(webapp2.RequestHandler):
                 continue
 
             now = datetime.datetime.now()
-            subscriptions = Subscription.query( Subscription.next_poll < now, 
+            subscriptions = Subscription.query( Subscription.next_poll < now,
                                                 Subscription.source == src.key )
 
             for subscription in subscriptions:
                 logging.log(logging.DEBUG, "subscription=%r" % subscription)
                 self.send_mail( subscription, feed, maxpublished )
-        
+
 
 app = webapp2.WSGIApplication([
     ('/api/subscribe', SubscribeHandler),

@@ -15,9 +15,9 @@ handlers:
 - url: /tasks/.*
   script: main.app
 
-- url: /scripts/(.+)
-  static_files: scripts/\1
-  upload: scripts/
+- url: /static/(.+)
+  static_files: static/\1
+  upload: static/
 
 - url: /sample/rss
   static_files: sample/sample.rss

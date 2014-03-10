@@ -11,7 +11,7 @@ The notification server does all the user authentication, RSS feed polling, filt
 API
 ---
 
-** General **
+**General**
 
 All API commands work wither with GET or POST.
 
@@ -23,7 +23,7 @@ For **POST**, parameters are passed as a JSON object in the request's body.
 All commands return a JSON object with the command's reponse. All reponses contain a boolean `success` indicating the command's success, and possibly additional fields.
 
 
-** Subscribe to a feed **
+**Subscribe to a feed**
 
     /api/subscribe
 
@@ -59,7 +59,7 @@ Subscribes a user to a specific notification.
   identification string for the subscription.
   Can be used to unsubscribe later.
 
-** Unsubscribe from a feed **
+**Unsubscribe from a feed**
 
     /api/unsubscribe
 
@@ -88,3 +88,14 @@ Permitted and useful tags are:
 - `item.title`
 - `item.description`
 - `item.link`
+
+Also special tags under the `pkw` namespace (`xmlns:pkw="http://hasadna.org.il/rss/1.0/dtd"`):
+- `item.pkw:tags`
+
+  Comma separated list of tags which is used for filtered subscriptions.
+
+- `item.pkw:latlon`
+
+  Lat,Lon for the item, used for geo-filtered subscriptions.
+
+see `sample/sample.rss` for a sample RSS file.

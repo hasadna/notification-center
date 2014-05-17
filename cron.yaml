@@ -1,4 +1,4 @@
 cron:
 - description: periodic rss poll
   url: /tasks/pollrss
-  schedule: every 10 mins
+  schedule: every 1 mins

@@ -201,11 +201,18 @@ class PollRssHandler(webapp2.RequestHandler):
         template_data = { 'feed': feed.feed, 'entries': to_send }
         logging.info("%r" % template_data)
 
+        text_template = self.TEXT_TEMPLATE
+        html_template = self.HTML_TEMPLATE
+        if feed.hasattr('pkw_text_template'):
+            text_template = feed.pkw_text_template
+        if feed.hasattr('pkw_html_template'):
+            html_template = feed.pkw_html_template
+
         mail.send_mail(sender="Hasadna Notification Center <%s>" % sender,
                        to=subscription.user.email(),
                        subject="Updates from: %s" % feed.feed.title,
-                       body=pystache.render(self.TEXT_TEMPLATE,template_data),
-                       html=pystache.render(self.HTML_TEMPLATE,template_data),
+                       body=pystache.render(text_template,template_data),
+                       html=pystache.render(html_template,template_data),
                     #    body= subtitle + "\n---\n".join("\n".join([x.title,x.description,x.link]) for x in to_send),
                     #    html="<h2>%s</h2>" % subtitle + "<hr/>".join("<br/>".join(["<b>"+x.title+"</b>",x.description,x.link]) for x in to_send)
                        )

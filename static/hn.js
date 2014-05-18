@@ -74,6 +74,39 @@
       }
     };
 
+    HN.prototype.issubscribed = function(url, tags, latlon, success_cb, login_cb) {
+      var apiurl, data, handler, invocation;
+      apiurl = 'http://hasadna-notifications.appspot.com/api/issubscribed';
+      data = {
+        url: url,
+        tags: tags,
+        latlon: latlon
+      };
+      data = JSON.stringify(data);
+      invocation = new XMLHttpRequest();
+      handler = function() {
+        var response;
+        if (invocation.readyState !== 4) {
+          return;
+        }
+        response = invocation.response;
+        if (response.login != null) {
+          url = response.login;
+          return login_cb(url);
+        } else {
+          return success_cb(response.success, response.id);
+        }
+      };
+      if (invocation) {
+        invocation.open('POST', apiurl, true);
+        invocation.setRequestHeader('Content-Type', 'application/json');
+        invocation.responseType = 'json';
+        invocation.onreadystatechange = handler;
+        invocation.withCredentials = true;
+        return invocation.send(data);
+      }
+    };
+
     return HN;
 
   })();

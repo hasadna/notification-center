@@ -5,7 +5,26 @@
 login = function(url) {
   $("#message").html("Login needed - please click <a href='"+url+"' target='_blank'>Here</a>")
 }
+check_issubscribed = function() {
+      window.hn.issubscribed(
+               $("#url").val(),
+               $("#tags").val(),
+               $("#latlon").val(),
+               function( subscribed, key ) {
+                   if ( subscribed ) {
+                       $("#message").html("Subscribed! <a href='#' class='unsubscribe' data-key='"+key+"'>Unsubscribe</a>");
+                   } else {
+                       $("#message").html("Not subscribed!");
+                   }
+               },
+               function( url ) {
+                   $("#message").html("Not logged in...");
+               } );
+}
 $( function() {
+  $("#tags, #latlon, #url").change( function() {
+    check_issubscribed();
+  });
   $("#subscribe").submit( function() {
     window.hn.subscribe(
              $("#url").val(),
@@ -19,7 +38,7 @@ $( function() {
              function( url ) {
                  login(url);
              } );
-
+    return false;
   } );
   $(document).on("click", ".unsubscribe", function() {
     key = $(this).attr("data-key");
@@ -32,6 +51,7 @@ $( function() {
                            } );
     return false;
   } );
+  check_issubscribed();
 });
 </script>
 </head>

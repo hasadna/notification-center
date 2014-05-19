@@ -101,6 +101,15 @@ class SubscribeHandler(APIHandler):
 
             tags = [x for x in tags if len(x) > 0]
 
+            try:
+                if latlon is not None:
+                    latlon = latlon.split(",")
+                    lat = float(latlon[0])
+                    lon = float(latlon[1])
+                    latlon = db.GeoPt(lat,lon)
+            except:
+                latlon = None
+
             src = NotificationSource.query( NotificationSource.url == url ).fetch(1)
             if len(src) == 1:
                 src = src[0]
@@ -203,9 +212,9 @@ class PollRssHandler(webapp2.RequestHandler):
 
         text_template = self.TEXT_TEMPLATE
         html_template = self.HTML_TEMPLATE
-        if feed.hasattr('pkw_text_template'):
+        if hasattr(feed,'pkw_text_template'):
             text_template = feed.pkw_text_template
-        if feed.hasattr('pkw_html_template'):
+        if hasattr(feed,'pkw_html_template'):
             html_template = feed.pkw_html_template
 
         mail.send_mail(sender="Hasadna Notification Center <%s>" % sender,

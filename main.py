@@ -106,7 +106,7 @@ class SubscribeHandler(APIHandler):
                     latlon = latlon.split(",")
                     lat = float(latlon[0])
                     lon = float(latlon[1])
-                    latlon = db.GeoPt(lat,lon)
+                    latlon = ndb.GeoPt(lat,lon)
             except:
                 latlon = None
 
@@ -158,6 +158,15 @@ class IsSubscribedHandler(APIHandler):
                 tags = []
 
             tags = [x for x in tags if len(x) > 0]
+
+            try:
+                if latlon is not None:
+                    latlon = latlon.split(",")
+                    lat = float(latlon[0])
+                    lon = float(latlon[1])
+                    latlon = ndb.GeoPt(lat,lon)
+            except:
+                latlon = None
 
             src = NotificationSource.query( NotificationSource.url == url ).fetch(1)
             if len(src) == 1:

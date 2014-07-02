@@ -1,4 +1,5 @@
 import sys
+import os
 import webapp2
 import json
 import datetime
@@ -13,6 +14,11 @@ from google.appengine.api import urlfetch
 from google.appengine.api import mail
 
 from feedparser import feedparser
+
+from premailer import Premailer
+import cssutils
+
+sys.path.append(os.path.dirname(__file__))
 
 class APIHandler(webapp2.RequestHandler):
 
@@ -201,7 +207,9 @@ class PollRssHandler(webapp2.RequestHandler):
                     logging.debug("no tags %r (%r)" % (entry,subscription.tags))
                     continue
             to_send.append( entry )
-        to_send.sort(key=lambda e:e.pkw_score )
+        to_send.sort(key=lambda e:-e.pkw_score )
+        for i,e in enumerate(to_send):
+            e['index'] = i+1
 
         if len(to_send) == 0:
             logging.debug("nothing new to send...")
@@ -215,22 +223,30 @@ class PollRssHandler(webapp2.RequestHandler):
         logging.log(logging.DEBUG,"about to send: %r,%r" % (subscription,to_send))
         sender = "noreply@hasadna-notifications.appspotmail.com"
         logging.log(logging.DEBUG,"Sender email: %s" % sender)
+        sender_name = "Hasadna Notification Center"
+        if hasattr(feed.feed,'pkw_sender'):
+            sender_name = feed.feed.pkw_sender
 
         template_data = { 'feed': feed.feed, 'entries': to_send }
-        logging.info("%r" % template_data)
 
         text_template = self.TEXT_TEMPLATE
         html_template = self.HTML_TEMPLATE
-        if hasattr(feed,'pkw_text_template'):
-            text_template = feed.pkw_text_template
-        if hasattr(feed,'pkw_html_template'):
-            html_template = feed.pkw_html_template
+        if hasattr(feed.feed,'pkw_text_template'):
+            text_template = feed.feed.pkw_text_template
+        if hasattr(feed.feed,'pkw_html_template'):
+            html_template = feed.feed.pkw_html_template
+            logging.log(logging.DEBUG,"using HTML template (%d bytes)" % len(html_template))
 
-        mail.send_mail(sender="Hasadna Notification Center <%s>" % sender,
+        html = pystache.render(html_template,template_data)
+        html = Premailer(html)
+        html = html.transform()
+        logging.log(logging.DEBUG,"result: %s" % html)
+
+        mail.send_mail(sender=u"%s <%s>" % (sender_name,sender),
                        to=subscription.user.email(),
-                       subject="Updates from: %s" % feed.feed.title,
+                       subject="%s" % feed.feed.title,
                        body=pystache.render(text_template,template_data),
-                       html=pystache.render(html_template,template_data),
+                       html=html,
                     #    body= subtitle + "\n---\n".join("\n".join([x.title,x.description,x.link]) for x in to_send),
                     #    html="<h2>%s</h2>" % subtitle + "<hr/>".join("<br/>".join(["<b>"+x.title+"</b>",x.description,x.link]) for x in to_send)
                        )
@@ -294,6 +310,9 @@ class PollRssHandler(webapp2.RequestHandler):
 
 
     def get(self):
+        import cssutils
+        parser = cssutils.CSSParser()
+        sheet = parser.parseString(u'a { color: red}')
         for src in NotificationSource.query():
             logging.log(logging.INFO, "src=%s" % src.url)
             try:
